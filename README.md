@@ -1,0 +1,2 @@
+Ce dépôt contient le TP réalisé dans le cadre du cours de Statistique et Économétrie à l'ENSAE Pierre Ndiaye.
+Le TP porte sur l'analyse des modèles de durée, également connus sous le nom de modèles de survie. L’objectif est d’étudier le temps jusqu’à la survenue d’un événement d’intérêt (ex : faillite d’une entreprise, décès d’un patient, départ d’un salarié, etc.) et de modéliser l’effet de variables explicatives sur cette durée.
