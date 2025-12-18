@@ -3,7 +3,7 @@
 library(survival) 
 library(CoxR2)
 library(timereg)
-library(survminer)  # comparaison
+library(survminer) 
 library(stringi)
 library(muhaz)    
 library(knitr)
@@ -18,6 +18,7 @@ str(ovarian)
 ?ovarian
 attach(ovarian)
 table(fustat)
+
 # futime: temps de survenu de l'événement décès en semaine
 # fustat: statut (0 = survie ou censure / 1 = décès)
 # age: âge des patientes en années
@@ -69,15 +70,19 @@ ggplot(ovarian, aes( x=rx,y=futime, fill=rx, colour=rx)) +
 
 table(fustat)
 boxplot(futime)
+hist(futime, nclass=10,prob=T)
+lines(density(futime),col=2,lwd=3)
+
 ### Estimation de la fonction de survie
 
 cbind(futime,fustat)
+
 survie = Surv(futime, fustat)
 survie
 
 data.frame(fustat,survie)
 
-# sans stratification
+# sans stratification (pas d'étude d'impact)
 
 fit = survfit(survie~1, data=ovarian)  
 fit
@@ -90,16 +95,20 @@ par(mfrow=c(1,1))
 
 plot(fit,col=4, xlab="Temps (semaine)", 
      ylab="S(t)",lwd=2)
-abline(v=638,col=2,lwd=2)
+abline(v=59,col=2,lwd=2)
+
+abline(v=638,col=6,lwd=2)
 abline(h=0.5,col="green",lwd=2)
+
 ggsurvplot(fit,conf.int = T)
 
-# survie cumulee
+# survie cumulee (fonction de répartition)
 
 ggsurvplot(fit, fun = "event", risk.table = TRUE, 
            surv.scale = "percent", break.time.by = 12)
 
-# avec stratification (variable rx !: placebo, 2: traitement)
+# avec stratification 
+# (variable rx 1: placebo, 2: traitement)
 
 fit2 = survfit(survie~rx,data=ovarian)  
 fit2
@@ -116,9 +125,22 @@ ggsurvplot(fit2)   # sans IC
 ggsurvplot(fit2,conf.int = T) # avec IC
 
 levels(resid.ds)
-levels(rx)
+fit2.resid = survfit(survie~resid.ds,data=ovarian)  
+fit2.resid
+summary(fit2.resid)
+ggsurvplot(fit2.resid,conf.int = T) # avec IC
 
-fit2b = survfit(survie ~ resid.ds + rx , data=ovarian)
+levels(ecog.ps)
+fit2.eco = survfit(survie~ecog.ps,data=ovarian)  
+fit2.eco
+summary(fit2.eco)
+ggsurvplot(fit2.eco,conf.int = T) # avec IC
+
+fit2.age = survfit(survie~age,data=ovarian)  
+ggsurvplot(fit2.age)   # sans IC
+
+
+fit2b = survfit(survie ~ resid.ds + rx, data=ovarian)
 summary(fit2b)
 
 ggsurvplot(fit2b,conf.int = F)
@@ -128,11 +150,13 @@ ggsurvplot(fit2b,conf.int = T)
 
 summary(age)
 
+hist(age)
+
 age2 = cut(age, breaks = 3)
 str(age2)
 table(age2)
 
-age3=cut(age,breaks=c(38,50,62,75))
+age3=cut(age,breaks=c(38,50,65,75))
 table(age3)
 
 ## modalites de age2
@@ -148,12 +172,15 @@ levels(age2ref)
 
 # estimation des fonctions de survie
 
-fit3 = survfit(survie~age2,data=ovarian)  # avec stratification
+fit3 = survfit(survie~age3+rx,data=ovarian)  # avec stratification
 fit3
 summary(fit3)
 
 plot(fit3,lty=c(2,2,2),lwd=c(2,2,2),col=c("black", "blue","red"), conf.int=F, 
      xlab=c("Temps (semaine)"), ylab=c("S(t)"))
+
+legend("bottomright", c("C1", "C2","C3"), lwd=c(1,1,1), 
+       col=c("black","blue","red"),title="Groupes")
 
 legend("bottomright", c("(38.9,50.8]", "(50.8,62.6]","(62.6,74.5]"), lwd=c(1,1,1), 
        col=c("black","blue","red"),title="Groupes")
@@ -179,7 +206,7 @@ plot(fit$time,-log(fit$surv),type="s",col="red",
      xlab='time',
      main="Estimateur de Breslow du risque cumulé")
 
-par(mfrow=c(2,1))
+par(mfrow=c(1,2))
 plot(alen$time,p, type="s", ylab="FRCNA",
      main= "Estimateur de Nelson-Alen du risque cumulé")
 
@@ -216,6 +243,11 @@ legend("bottomright", legend=c("Placebo", "Traitement"),
 test.survie = survdiff(survie~rx)
 test.survie
 
+test.survie.a = survdiff(survie~age2)
+test.survie.a
+
+fit3a = survfit(survie~age2,data=ovarian)  # avec stratification
+
 ggsurvplot(fit2,
            conf.int=TRUE, # ajoutes les IC
            pval=TRUE, 	   # donne la p-value du test de log-rank
@@ -229,7 +261,7 @@ ggsurvplot(fit2,
 ts = survdiff(survie~age2)
 ts
 
-ggsurvplot(fit3,
+ggsurvplot(fit3a,
            conf.int=TRUE, # ajoutes les IC
            pval=TRUE, 	   # donne la p-value du test de log-rank
            risk.table=TRUE, #  tableau de risques sous le graphique
