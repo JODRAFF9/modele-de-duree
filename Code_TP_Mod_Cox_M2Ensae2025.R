@@ -17,11 +17,16 @@ library(conflicted)
 conflict_prefer("prop", "timereg")
 conflict_prefer("prop","questionr") 
 library(dplyr)
+#install.packages("forestmodel")  # une seule fois
+library(forestmodel)
 
 #Donnees de cancer
 
 data("lung")
 attach(lung)
+
+Data <- lung
+View(Data)
 
 head(lung)
 ?lung
@@ -44,14 +49,13 @@ dim(lung)
 table(status)
 
 status=ifelse(status==2,1,0)
+
 table(status)
 
 attach(lung)
 
-
-
-
-args(coxph)  # arguments de la commande
+args(coxph)  # donnent les arguments de la commande
+# Cox proportional hazards regression model
 
 ## 1) modele 1 univarie: effet variable sex 
 
@@ -62,6 +66,8 @@ time
 
 survie = Surv(time,status)
 survie
+?Surv
+
 
 class(sex)
 genre=as.factor(sex)
@@ -71,27 +77,30 @@ table(genre)
 
 mod_bres = coxph(survie~genre,method="breslow")
 mod_bres
+summary(mod_bres)
 
 mod_exa = coxph(survie~genre, method="exact")
 mod_exa
+summary(mod_exa)
 
 mods = coxph(survie~genre, method="efron")
 mods
 summary(mods)
 
-coxr2(mods)$rsq # % de variation de variatipon expliquee par la variable
+coxr2(mods)$rsq # % de variation de variance expliquee par la variable
 coxr2(mod_bres)$rsq
-coxr2(mod_exa)$rsq
+coxr2(mod_exa)$rsq 
 
 ## 1) modele 1 univarie: effet variable age --------
 
 moda = coxph(survie~age, method="efron")
-moda
+moda 
 summary(moda)
 
 summary(age)
 
-ageb = cut(age,breaks=c(39,56,69,82))
+ageb = cut(age,breaks=c(38,56,69,82))
+
 table(ageb)
 class(ageb)
 levels(ageb)
@@ -113,15 +122,22 @@ table(agebbb)
 moda3 = coxph(survie~agebbb, method="efron")
 summary(moda3)
 
-coxr2(moda1)$rsq
+coxr2(moda1)$rsq # Pseudo R2
 coxr2(moda2)$rsq
 coxr2(moda3)$rsq
 
-#modele multivarie
+
+# modèle multivarie
+
+table(ph.ecog)
+sum(is.na(ph.ecog))
+lung[is.na(ph.ecog),]
+
 ph.ecog1=as.factor(ph.ecog)
+
 table(ph.ecog1)
 
-mod1=coxph(survie~age*genre+ph.ecog+ph.karno
+mod1=coxph(survie~age+genre+ph.ecog+ph.karno
            +meal.cal+wt.loss, method="efron")
 summary(mod1)
 
@@ -139,21 +155,24 @@ mod3.bis=coxph(survie~age+genre+ph.ecog1+ph.karno
            +meal.cal*wt.loss, method="efron")
 summary(mod3.bis)
 
+# On enlève meal.cal vu sa p-value
+
 mod4=coxph(survie~age+genre+ph.ecog1+ph.karno
            +wt.loss, method="efron")
 summary(mod4)
 
-
+#  On enlève wt.loss vu sa p-value
 mod5=coxph(survie~age+genre+ph.ecog1+ph.karno, method="efron")
 summary(mod5)
 
-
+# On enlève ph.karno vu sa p-value
 mod6=coxph(survie~age+genre+ph.ecog1, method="efron")
 summary(mod6)
 
 mod6bis=coxph(survie~age*genre+ph.ecog1, method="efron")
 summary(mod6bis)
 
+# On enlève age vu sa p-value
 mod7=coxph(survie~genre+ph.ecog1, method="efron")
 summary(mod7)
 
@@ -178,6 +197,7 @@ selectCox(survie~age+genre+ph.ecog1+ph.karno
 # affichage
 
 ggcoef_model(mod7, exponentiate = TRUE)
+# faire dev.off() si le code précédent ne marche pas
 
 forest_model(mod7) 
 
@@ -186,7 +206,7 @@ forest_model(mod7)
 ggsurvplot(survfit(mod7,data=lung), palette= 'green',
            ggtheme = theme_minimal())
 
-# Courbe de survie à partir du modèle pour 2 individus
+# estimation de la Courbe de survie à partir du modèle pour 2 individus
 
 nd=with(lung,data.frame(genre=c("Fem","Hom"),ph.ecog1 = c("2","0")))
 nd
