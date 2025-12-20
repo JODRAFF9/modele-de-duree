@@ -21,14 +21,11 @@ library(dplyr)
 #Donnees de cancer
 
 data("lung")
-head(lung)
-str(lung)
-dim(lung)
-table(status)
-status=ifelse(status==2,1,0)
-table(status)
-
 attach(lung)
+
+head(lung)
+?lung
+str(lung)
 
 #inst: Code Institution 
 #time: temps de survie en jours
@@ -40,6 +37,18 @@ attach(lung)
 #pat.karno: Karnofsky performance score as rated by patient
 #meal.cal: Calories consumed at meals
 #wt.loss: Weight loss in last six months
+
+dim(lung)
+# 228 observations et 10 variables 
+
+table(status)
+
+status=ifelse(status==2,1,0)
+table(status)
+
+attach(lung)
+
+
 
 
 args(coxph)  # arguments de la commande
